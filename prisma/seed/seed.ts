@@ -5,16 +5,16 @@ const prisma = new PrismaClient();
 
 async function main() {
   const bcpass = bcryptjs.hashSync('123456', 10);
-
-  // Limpia los usuarios anteriores
-  // await prisma.usuario.deleteMany();
+  
+  // Elimina todos los usuarios existentes
+  await prisma.usuario.deleteMany();
 
   // Inserta nuevos usuarios
   const newUsers = await prisma.usuario.createMany({
     data: [
       {
-        nombre: 'Admin',
-        apellido: 'Root',
+        nombre: 'root',
+        apellido: 'root',
         correo: 'p1@correo.com',
         telefono: '999999999',
         contrasenia: bcpass,

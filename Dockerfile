@@ -1,23 +1,29 @@
-# Usa una imagen base de Node.js
+# Usa una imagen base ligera con Node
 FROM node:22.14-alpine
 
-# Crea y configura el directorio de trabajo
+# Establece el directorio de trabajo
 WORKDIR /app
 
-# Copia los archivos de package.json y package-lock.json
+# Copia los archivos de dependencias
 COPY package*.json ./
 
-# Instala las dependencias
+# Instala dependencias
 RUN npm install
 
-# Copia el código de tu aplicación
+# Copia el resto del código
 COPY . .
 
-# Compila el código de TypeScript
+# Compila el código
 RUN npm run build
 
-# Expone el puerto que va a utilizar NestJS
+# Genera el cliente de Prisma
+RUN npx prisma generate
+
+# Expone el puerto NestJS
 EXPOSE 3000
 
-# Comando para ejecutar tu app en producción
-CMD ["npm", "run", "start:prod"]
+# Usa "migrate deploy" si estás en producción
+# Usa "db push" si solo necesitas sincronizar sin migraciones
+# Usa "migrate dev" solo en desarrollo (¡no ideal aquí!)
+# Seed podría ir aquí si estás seguro que la DB ya existe
+CMD npx prisma migrate deploy && npm run seed && npm run start:prod
