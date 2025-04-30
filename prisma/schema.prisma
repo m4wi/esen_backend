@@ -9,19 +9,94 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model AppConfig {
+  id            Int    @id @default(autoincrement())
+  token         Json   // Primer campo JSON
+  credentials   Json   // Segundo campo JSON
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+}
+
+
 model Usuario {
-  usuario_id  Int      @id @default(autoincrement())
-  nombre      String   @db.VarChar(70)
-  apellido    String   @db.VarChar(70)
-  correo      String   @unique @db.VarChar(254)
-  telefono    String   @db.VarChar(15)
-  contrasenia String   @db.Char(60)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  rol         Rol      @default(usuario)
+  usuario_id        Int         @id @default(autoincrement())
+  nombre            String      @db.VarChar(70)
+  apellido          String      @db.VarChar(70)
+  correo            String      @unique @db.VarChar(254)
+  telefono          String      @db.VarChar(15)
+  codigo_usuario    String?     @unique @db.VarChar(70)
+  contrasenia       String      @db.Char(60)
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  rol               Rol         @default(usuario)
+  tipo_usuario      TipoUsuario @default(desconocido)
+  drive_folder      String?     @db.VarChar(255) @map("drive_folder")
+
+  observacionesEmitidas  Observacion[] @relation("EmisorObservaciones")
+  observacionesRecibidas Observacion[] @relation("ReceptorObservaciones")
+
+  documentos UsuarioDocumento[]
 }
 
 enum Rol {
   usuario
   admin
+  secretaria
+  desconocido
+}
+
+enum TipoUsuario { 
+  egresado
+  titulado
+  desconocido
+}
+
+model Observacion {
+  id_observacion Int
+  fk_emisor      Int
+  fk_receptor    Int
+  contenido      String?   @db.VarChar(1024)
+  fecha          DateTime
+  descripcion    String?   @db.VarChar(100)
+
+  // Relaciones
+  emisor         Usuario   @relation("EmisorObservaciones", fields: [fk_emisor], references: [usuario_id])
+  receptor       Usuario   @relation("ReceptorObservaciones", fields: [fk_receptor], references: [usuario_id])
+
+  @@id([id_observacion, fk_emisor, fk_receptor]) // Primary key compuesta
+  @@index([fk_receptor])
+  @@index([fk_emisor])
+}
+
+
+
+model Documento {
+  id_documento     Int           @id
+  nombre_documento String        @db.VarChar(100)
+  tipo_procedimiento TipoProcedimiento
+
+  usuarios UsuarioDocumento[]
+}
+
+enum TipoProcedimiento {
+  egresado
+  titulado
+}
+
+
+model UsuarioDocumento {
+  id_udoc      Int       @id @default(autoincrement())
+  drive_link   String?   @db.VarChar(100)
+  fk_documento Int
+  fk_usuario   Int
+  created_at   DateTime  @default(now()) 
+  updated_at   DateTime  @updatedAt
+
+  // Relaciones
+  usuario      Usuario   @relation(fields: [fk_usuario], references: [usuario_id], onDelete: Restrict, onUpdate: Restrict)
+  documento    Documento @relation(fields: [fk_documento], references: [id_documento])
+
+  @@unique([fk_documento, fk_usuario]) // Porque ya hay un ID autoincremental, el resto se puede hacer UNIQUE
+  @@index([fk_usuario])
+  @@index([fk_documento])
 }

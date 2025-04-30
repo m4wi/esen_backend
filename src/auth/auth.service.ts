@@ -23,12 +23,15 @@ export class AuthService {
     return token;
   }
 
-  async signIn(correo: string, contrasenia: string): Promise<any> {
+  async signIn(credencial: string, contrasenia: string): Promise<any> {
     let usuario: any; // add type
     try {
-      usuario = await this.prisma.usuario.findUniqueOrThrow({
+      usuario = await this.prisma.usuario.findFirstOrThrow({
         where: {
-          correo
+          OR: [
+            { correo: credencial || ""},
+            { codigo_usuario: credencial || ""}
+          ]
         },
         select: {
           usuario_id: true,

@@ -1,15 +1,13 @@
 import {
   IsEmail,
-  IsEnum,
   IsOptional,
   IsString,
-  Length,
   Matches,
   MaxLength,
   MinLength,
   NotContains
 } from "class-validator";
-import { Rol } from "generated/prisma";
+import { Rol , TipoUsuario} from "generated/prisma";
 
 
 export class RegisterUserDto {
@@ -31,6 +29,10 @@ export class RegisterUserDto {
   @IsString() // TODO: add some regex to check phone
   telefono: string;
 
+  @IsOptional()
+  @IsString()
+  codigo_usuario: string;
+
   @IsString()
   @MinLength(6)
   @MaxLength(60)
@@ -42,4 +44,12 @@ export class RegisterUserDto {
 
   @IsString()
   rol: Rol
+
+  @IsString()
+  tipo_usuario: TipoUsuario;
+
+  @IsOptional()
+  @IsString()
+  drive_folder: string;
+
 }
