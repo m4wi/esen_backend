@@ -24,7 +24,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('login')
   signIn(@Body() loginUserDto: LoginUserDto) {
-    return this.authService.signIn(loginUserDto.correo, loginUserDto.contrasenia);
+    return this.authService.signIn(loginUserDto.credencial, loginUserDto.contrasenia);
   }
 
   @HttpCode(HttpStatus.OK)
