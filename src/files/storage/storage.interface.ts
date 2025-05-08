@@ -4,7 +4,7 @@ import Stream from "stream";
 
 export interface StorageStrategy {
   // Subir un archivo
-  upload(filePath: string, fileName: string, mimeType: string): Promise<any>;
+  upload(file: Express.Multer.File, folderId: string): Promise<any>;
 
   // Subir múltiples archivos
   uploadMany(files: { filePath: string; fileName: string; mimeType: string }[]): Promise<any[]>;
@@ -25,8 +25,14 @@ export interface StorageStrategy {
   deleteMany(fileIds: string[]): Promise<any[]>;
 
   // Crear carpeta raíz para el usuario
-  createUserRootFolder(userId: string): Promise<string>; // puede devolver el ID o path
+  createUserFolder(folderName: string, rootFolderId: string): Promise<string>; // puede devolver el ID o path
 
   // Eliminar carpeta raíz del usuario (y posiblemente todo su contenido)
-  deleteUserRootFolder(userId: string): Promise<any>;
+  deleteAppFolder(userId: string): Promise<any>;
+
+
+  getFileRoute(fileId: string): Promise<string>;
+
+  getFolderRoute(folderId: string): Promise<string>;
+
 }
