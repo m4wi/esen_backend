@@ -37,6 +37,8 @@ export class AuthService {
           usuario_id: true,
           correo: true,
           contrasenia: true,
+          rol: true,
+          tipo_usuario: true,
         }
       })
     } catch (error) {
@@ -52,7 +54,9 @@ export class AuthService {
     return {
       usuario,
       token: this.getJwtToken({
-        id: usuario.usuario_id
+        id: usuario.usuario_id,
+        rol: usuario.rol,
+        tipo_usuario: usuario.tipo_usuario
       })
     }
   }
@@ -81,6 +85,7 @@ export class AuthService {
         user: newuser,
         token: this.getJwtToken({
           id: newuser.usuario_id,
+          rol: newuser.rol,
         })
       };
 
@@ -91,4 +96,12 @@ export class AuthService {
       throw new InternalServerErrorException('Server error');
     }
   }
+  /*
+  async refreshToken(user: User){
+    return {
+      user: user,
+      token: this.getJwtToken({id: user.id})
+    };
+  }
+  */
 }

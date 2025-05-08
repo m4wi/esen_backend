@@ -1,43 +1,33 @@
-# Usa una imagen base ligera con Node
-FROM node:22.14-alpine AS builder
+# Base Stage
+FROM node:23-alpine3.20 AS base
 
-# Establece el directorio de trabajo
-WORKDIR /app
+WORKDIR /usr/src/app
 
-# Copia los archivos de dependencias
-COPY package*.json ./
+# Development Stage
+FROM base AS development
 
-# Instala dependencias
+COPY --chown=node:node package*.json ./
 RUN npm install
 
-# Copia el resto del código
-COPY . .
+COPY --chown=node:node . .
 
-# Compila el código
-RUN npm run build
+USER node
 
-# Genera el cliente de Prisma
-RUN npx prisma generate
-RUN npm run build
+# Build Stage
+FROM base AS build
 
+COPY --from=development /usr/src/app /usr/src/app
 
-# --- Etapa de producción final ---
-FROM node:22.14-alpine
+RUN npm run build && npx prisma generate
 
-WORKDIR /app
+# Production Stage
+FROM base AS production
 
-# Copia solo lo necesario del build anterior
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/generate ./generate
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/package*.json ./
+ENV NODE_ENV=production
 
-# Expone el puerto NestJS
-EXPOSE 3000
+COPY --from=build /usr/src/app/node_modules ./node_modules
+COPY --from=build /usr/src/app/dist ./dist
+COPY --from=build /usr/src/app/generated ./generated
+COPY --from=build /usr/src/app/prisma ./prisma
 
-# Usa "migrate deploy" si estás en producción
-# Usa "db push" si solo necesitas sincronizar sin migraciones
-# Usa "migrate dev" solo en desarrollo (¡no ideal aquí!)
-# Seed podría ir aquí si estás seguro que la DB ya existe
-CMD npx prisma migrate deploy && node dist/main.js
+CMD ["node", "dist/main.js"]

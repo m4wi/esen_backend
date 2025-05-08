@@ -10,11 +10,12 @@ datasource db {
 }
 
 model AppConfig {
-  id            Int    @id @default(autoincrement())
-  token         Json   // Primer campo JSON
-  credentials   Json   // Segundo campo JSON
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id_appconfig  Int      @id @default(autoincrement())
+  rootDriveId   String?  @db.VarChar(100)
+  token         Json?
+  credentials   Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 
@@ -71,9 +72,10 @@ model Observacion {
 
 
 model Documento {
-  id_documento     Int           @id
-  nombre_documento String        @db.VarChar(100)
-  tipo_procedimiento TipoProcedimiento
+  id_documento                Int           @id
+  nombre_documento            String        @db.VarChar(100)
+  tipo_procedimiento          TipoProcedimiento
+  descripcion_requisito       String?       @db.VarChar(100)
 
   usuarios UsuarioDocumento[]
 }
@@ -85,18 +87,35 @@ enum TipoProcedimiento {
 
 
 model UsuarioDocumento {
-  id_udoc      Int       @id @default(autoincrement())
-  drive_link   String?   @db.VarChar(100)
-  fk_documento Int
-  fk_usuario   Int
-  created_at   DateTime  @default(now()) 
-  updated_at   DateTime  @updatedAt
+  id_udoc             Int                  @id @default(autoincrement())
+  drive_link          String?              @db.VarChar(100)
+  fk_documento        Int
+  fk_usuario          Int
+  fk_subdescripcion   Int?
+  estado              EstadoDocumento      @default(vacio)
+  created_at          DateTime             @default(now()) 
+  updated_at          DateTime             @updatedAt
 
   // Relaciones
-  usuario      Usuario   @relation(fields: [fk_usuario], references: [usuario_id], onDelete: Restrict, onUpdate: Restrict)
-  documento    Documento @relation(fields: [fk_documento], references: [id_documento])
+  usuario         Usuario         @relation(fields: [fk_usuario], references: [usuario_id], onDelete: Restrict, onUpdate: Restrict)
+  documento       Documento       @relation(fields: [fk_documento], references: [id_documento])
+  subdescripcion  SubDescripcion? @relation(fields: [fk_subdescripcion], references: [id_subdescripcion])
 
   @@unique([fk_documento, fk_usuario]) // Porque ya hay un ID autoincremental, el resto se puede hacer UNIQUE
   @@index([fk_usuario])
   @@index([fk_documento])
+}
+
+enum EstadoDocumento {
+  observacion
+  aceptado
+  rechazado
+  vacio
+}
+
+model SubDescripcion {
+  id_subdescripcion       Int       @id @default(autoincrement())
+  nombre_subdescripcion   String?   @db.VarChar(100)
+
+  documentos UsuarioDocumento[]
 }
