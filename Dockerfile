@@ -18,7 +18,7 @@ FROM base AS build
 
 COPY --from=development /usr/src/app /usr/src/app
 
-RUN npm run build && npx prisma generate
+RUN npx prisma generate && npm run build  
 
 # Production Stage
 FROM base AS production
