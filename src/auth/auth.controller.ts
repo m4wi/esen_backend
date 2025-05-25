@@ -6,8 +6,11 @@ import {
   Post,
   HttpCode,
   HttpStatus,
-  UseGuards
-} from '@nestjs/common';
+  UseGuards,
+  Req,
+  Res,
+  } from '@nestjs/common';
+import { Response } from 'express';
 
 import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
@@ -20,18 +23,47 @@ export class AuthController {
   constructor(
     private authService: AuthService
   ) { }
-
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  signIn(@Body() loginUserDto: LoginUserDto) {
-    return this.authService.signIn(loginUserDto.credencial, loginUserDto.contrasenia);
+  async signIn(
+    @Body() loginUserDto: LoginUserDto,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const { usuario, token } = await this.authService.signIn(
+      loginUserDto.credencial, 
+      loginUserDto.contrasenia
+    );
+
+
+    res.cookie('auth_cookie', token, {
+      httpOnly: false,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 3600000
+    });
+
+    return usuario;
   }
 
   @HttpCode(HttpStatus.OK)
   @Post('register')
-  signUp(@Body() registerUserDto: RegisterUserDto ) {
-    return this.authService.signUp(registerUserDto);
+  async signUp(
+    @Body() registerUserDto: RegisterUserDto,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const { newuser, token } = await this.authService.signUp(registerUserDto);
+
+    res.cookie('auth_cookie', token, {
+      httpOnly: false,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 3600000
+    });
+
+    return newuser;
   }
+
+
   // Example to guard a route
   /*
   @UseGuards(AuthGuard)

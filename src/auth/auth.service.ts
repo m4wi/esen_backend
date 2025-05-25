@@ -35,32 +35,34 @@ export class AuthService {
         },
         select: {
           usuario_id: true,
-          correo: true,
-          contrasenia: true,
           rol: true,
           tipo_usuario: true,
+          contrasenia: true,
         }
       })
     } catch (error) {
       throw new BadRequestException('Wrong credentials');
     }
-
     const passwordMatch: Boolean = await bcrypt.compare(contrasenia, usuario.contrasenia);
 
     if (!passwordMatch) {
       throw new BadRequestException('Wrong credentials');
     }
 
-    return {
-      usuario,
-      token: this.getJwtToken({
-        id: usuario.usuario_id,
-        rol: usuario.rol,
-        tipo_usuario: usuario.tipo_usuario
-      })
-    }
+    const token = this.getJwtToken({
+      id: usuario.usuario_id,
+      rol: usuario.rol,
+      tipo_usuario: usuario.tipo_usuario
+    });
+
+    delete usuario.contrasenia; // fix before
+    
+    return { usuario, token };
   }
 
+  /*
+  
+  */
 
   async signUp(registerUserDto: RegisterUserDto) {
     try {
@@ -77,17 +79,17 @@ export class AuthService {
           correo: true,
           telefono: true,
           rol: true,
+          tipo_usuario: true,
           createdAt: true
         }
       });
+      
+      const token = this.getJwtToken({
+        id: newuser.usuario_id,
+        rol: newuser.rol,
+      });
 
-      return {
-        user: newuser,
-        token: this.getJwtToken({
-          id: newuser.usuario_id,
-          rol: newuser.rol,
-        })
-      };
+      return { newuser, token };
 
     } catch (error) {
       if (error.code === 'P2002') {
