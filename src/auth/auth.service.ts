@@ -51,6 +51,8 @@ export class AuthService {
       throw new BadRequestException('Wrong credentials');
     }
 
+    delete usuario.contrasenia; // fix later
+    
     return {
       usuario,
       token: this.getJwtToken({
@@ -77,6 +79,7 @@ export class AuthService {
           correo: true,
           telefono: true,
           rol: true,
+          tipo_usuario: true,
           createdAt: true
         }
       });
@@ -86,6 +89,7 @@ export class AuthService {
         token: this.getJwtToken({
           id: newuser.usuario_id,
           rol: newuser.rol,
+          tipo_usuario: newuser.tipo_usuario
         })
       };
 
