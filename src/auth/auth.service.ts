@@ -49,15 +49,16 @@ export class AuthService {
       throw new BadRequestException('Wrong credentials');
     }
 
-    const token = this.getJwtToken({
-      id: usuario.usuario_id,
-      rol: usuario.rol,
-      tipo_usuario: usuario.tipo_usuario
-    });
-
-    delete usuario.contrasenia; // fix before
+    delete usuario.contrasenia; // fix later
     
-    return { usuario, token };
+    return {
+      usuario,
+      token: this.getJwtToken({
+        id: usuario.usuario_id,
+        rol: usuario.rol,
+        tipo_usuario: usuario.tipo_usuario
+      })
+    }
   }
 
   /*
@@ -88,8 +89,14 @@ export class AuthService {
         id: newuser.usuario_id,
         rol: newuser.rol,
       });
-
-      return { newuser, token };
+      return {
+        user: newuser,
+        token: this.getJwtToken({
+          id: newuser.usuario_id,
+          rol: newuser.rol,
+          tipo_usuario: newuser.tipo_usuario
+        })
+      };
 
     } catch (error) {
       if (error.code === 'P2002') {
