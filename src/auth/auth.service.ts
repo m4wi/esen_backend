@@ -35,16 +35,14 @@ export class AuthService {
         },
         select: {
           usuario_id: true,
-          correo: true,
-          contrasenia: true,
           rol: true,
           tipo_usuario: true,
+          contrasenia: true,
         }
       })
     } catch (error) {
       throw new BadRequestException('Wrong credentials');
     }
-
     const passwordMatch: Boolean = await bcrypt.compare(contrasenia, usuario.contrasenia);
 
     if (!passwordMatch) {
@@ -63,6 +61,9 @@ export class AuthService {
     }
   }
 
+  /*
+  
+  */
 
   async signUp(registerUserDto: RegisterUserDto) {
     try {
@@ -83,7 +84,11 @@ export class AuthService {
           createdAt: true
         }
       });
-
+      
+      const token = this.getJwtToken({
+        id: newuser.usuario_id,
+        rol: newuser.rol,
+      });
       return {
         user: newuser,
         token: this.getJwtToken({
