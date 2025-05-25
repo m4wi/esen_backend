@@ -27,7 +27,18 @@ export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
 
 
   async onModuleInit() {
-    await this.loadRemoteAppConfig();
+
+    const remoteConfigStatus = await this.loadRemoteAppConfig();
+    
+    if (!remoteConfigStatus) {
+      console.warn('No se pudo cargar la configuración de la aplicación desde la base de datos, cargando la configuracion local');
+      try {
+        await this.loadCredentialsFromFile();
+      } catch (error) {
+        console.error('Error loading credentials from file:', error);
+      }
+    }
+
     this.initGoogleAuthClient();
     this.drive = this.refreshDriveApiClient();
   }
@@ -62,9 +73,9 @@ export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
       if (!appConfig.credentials) console.warn('No se encontró las credenciales de la aplicación'); 
 
       this.cedentials = appConfig.credentials;
-
+      return true;
     } catch (error) {
-      throw new Error('Error loading app configuration: ' + error.message);
+      return false
     }
   }
 
