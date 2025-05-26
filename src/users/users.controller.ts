@@ -14,11 +14,13 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { FilesService } from '../files/files.service';
 import { create } from 'domain';
 import { CreateUserFolderDto } from './dto/create-user-folder.dto';
+import { UsersService } from './users.service';
 
 
 @Controller('users')
 export class UserController {
   constructor(
+    private usersService: UsersService,
     private filesService: FilesService
   ) { }
 
@@ -71,4 +73,19 @@ export class UserController {
     return this.filesService.listDocuments(userId);
   }
 
+  @HttpCode(HttpStatus.OK)
+  @Get(':userCode') 
+  getUserInfo(
+    @Param('userCode') userCode: string,
+  ) {
+    return this.usersService.buscarUsuario(userCode)
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Get('documents/:userCode') 
+  getUserDocumentsInfo(
+    @Param('userCode') userCode: string,
+  ) {
+    return this.usersService.listarDocumentosUsuario(userCode)
+  }
 }
