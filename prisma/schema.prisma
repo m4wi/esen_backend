@@ -71,13 +71,14 @@ model Observacion {
 
 
 model Documento {
-  id_documento                Int           @id
-  nombre_documento            String        @db.VarChar(100)
-  tipo_procedimiento          TipoProcedimiento
-  descripcion_requisito       String?       @db.VarChar(100)
-
-  usuarios UsuarioDocumento[]
+  id_documento          Int                 @id
+  nombre_documento      String              @db.VarChar(255)
+  tipo_procedimiento    TipoProcedimiento
+  descripcion_requisito String?             @db.VarChar(500)
+  usuarios              UsuarioDocumento[]
+  subdescripciones      SubDescripcion[]    @relation("DocumentoToSubDescripcion")
 }
+
 
 enum TipoProcedimiento {
   egresado
@@ -90,7 +91,6 @@ model UsuarioDocumento {
   drive_link          String?              @db.VarChar(100)
   fk_documento        Int
   fk_usuario          Int
-  fk_subdescripcion   Int?
   estado              EstadoDocumento      @default(vacio)
   created_at          DateTime             @default(now()) 
   updated_at          DateTime             @updatedAt
@@ -98,7 +98,6 @@ model UsuarioDocumento {
   // Relaciones
   usuario         Usuario         @relation(fields: [fk_usuario], references: [usuario_id], onDelete: Restrict, onUpdate: Restrict)
   documento       Documento       @relation(fields: [fk_documento], references: [id_documento])
-  subdescripcion  SubDescripcion? @relation(fields: [fk_subdescripcion], references: [id_subdescripcion])
 
   @@unique([fk_documento, fk_usuario]) // Porque ya hay un ID autoincremental, el resto se puede hacer UNIQUE
   @@index([fk_usuario])
@@ -113,8 +112,13 @@ enum EstadoDocumento {
 }
 
 model SubDescripcion {
-  id_subdescripcion       Int       @id @default(autoincrement())
-  nombre_subdescripcion   String?   @db.VarChar(100)
+  id_subdescripcion       Int @unique
+  fk_documento            Int
+  order                   Int
 
-  documentos UsuarioDocumento[]
+  nombre_subdescripcion   String?   @db.VarChar(500)
+  documento Documento @relation("DocumentoToSubDescripcion", fields: [fk_documento], references: [id_documento], onDelete: Cascade)
+
+  @@id([id_subdescripcion, fk_documento]) // Clave primaria compuesta (entidad débil)
 }
+
