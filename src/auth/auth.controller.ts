@@ -27,19 +27,40 @@ export class AuthController {
   @Post('login')
   async signIn(
     @Body() loginUserDto: LoginUserDto,
+    @Res({ passthrough: true }) res: Response
   ) {
-    return await this.authService.signIn(
+    const { usuario, token } = await this.authService.signIn(
       loginUserDto.credencial, 
       loginUserDto.contrasenia
     );
+
+
+    res.cookie('auth_cookie', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 3600000
+    });
+
+    return usuario;
   }
 
   @HttpCode(HttpStatus.OK)
   @Post('register')
   async signUp(
     @Body() registerUserDto: RegisterUserDto,
+    @Res({ passthrough: true }) res: Response
   ) {
-    return await this.authService.signUp(registerUserDto);
+    const { newuser, token } = await this.authService.signUp(registerUserDto);
+
+    res.cookie('auth_cookie', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 3600000
+    });
+
+    return newuser;
   }
 
 
