@@ -34,15 +34,24 @@ export class AuthController {
       loginUserDto.contrasenia
     );
 
+    // create a custom object
+    const authJson = {
+      userdata: usuario,
+      token: token
+    }
 
-    res.cookie('auth_cookie', token, {
+    const cookieAuthJson = JSON.stringify(authJson)
+
+    res.cookie('auth_cookie', cookieAuthJson, {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
       maxAge: 3600000
     });
 
-    return usuario;
+    return {
+      status: "ok"
+    }
   }
 
   @HttpCode(HttpStatus.OK)
@@ -53,14 +62,24 @@ export class AuthController {
   ) {
     const { newuser, token } = await this.authService.signUp(registerUserDto);
 
-    res.cookie('auth_cookie', token, {
+    // create a custom object
+    const authJson = {
+      userdata: newuser,
+      token: token
+    }
+
+    const cookieAuthJson = JSON.stringify(authJson)
+
+    res.cookie('auth_cookie', cookieAuthJson, {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
       maxAge: 3600000
     });
 
-    return newuser;
+    return {
+      status: "ok"
+    }
   }
 
 
