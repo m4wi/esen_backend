@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { DatabaseService } from 'src/database/database.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 // TODO: add interface representing a user entity 
@@ -8,82 +9,95 @@ export type User = any;
 @Injectable()
 export class UsersService {
   constructor(
-    private prismaService: PrismaService
+    private prismaService: PrismaService,
+    private databaseService: DatabaseService
   ){}
 
   async buscarUsuario ( userCode: string ) {
     if ( !userCode ) {
       throw new Error("usercode is null");
     }
+    let userdata: any;
     try {
-      const user = await this.prismaService.usuario.findUniqueOrThrow({
-        where: {
-          codigo_usuario: userCode
-        },
-        select: {
-          nombre: true,
-          apellido: true,
-          drive_folder: true,
-          usuario_id: true,
-          observacionesRecibidas: {
-            select: {
-              id_observacion: true,
-              fk_emisor: true,
-              fk_receptor: true,
-              contenido: true,
-              fecha: true,
-              descripcion: true
-            }
-          },
-          documentos: {
-            select: {
-              id_udoc: true,
-              drive_link: true
-            }
-          }
-        },
-      });
+      const result = await this.databaseService.query(
+        `
+        SELECT 
+          u.usuario_id,
+          u.nombre,
+          u.apellido,
+          u.drive_folder,
+          (
+            SELECT
+              json_agg(row_to_json(o))
+            FROM 
+              "Observacion" o
+            WHERE 
+              o.fk_receptor = u.usuario_id
+          ) AS observaciones,
+          (
+            SELECT
+              count(*)
+            FROM 
+              "UsuarioDocumento" 
+            WHERE 
+              fk_usuario = u.usuario_id 
+              AND 
+              estado = 'aceptado'
+          ) AS documentos_aceptados
+          FROM 
+            "Usuario" u
+          WHERE 
+            u.codigo_usuario = $1
+        `,
+        [userCode]
+      );
 
-      return user;
+      userdata = result.rows[0];
+      console.log(result)
     } catch (error) {
       throw new Error(error.message);
     }
+
+    return JSON.stringify(userdata);
   }
 
-  async listarDocumentosUsuario (userCode: string) {
+  async listarDocumentosUsuario (userCode: string, userType: string) {
     if ( !userCode ) {
       throw new Error("usercode is null");
     }
+    let userDocuments: any;
     try {
-      const userDocuments = await this.prismaService.usuario.findFirstOrThrow({
-        where:{
-          codigo_usuario: userCode
-        },
-        select: {
-          documentos: {
-            select: {
-              estado: true,
-              drive_link: true,
-              id_udoc: true,
-              documento: {
-                select: {
-                  id_documento: true,
-                  descripcion_requisito: true,
-                  subdescripciones: {
-                    select: {
-                      order: true,
-                      nombre_subdescripcion : true
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      });
-      return userDocuments;
+      const result = await this.databaseService.query(
+        `
+        SELECT
+          dc.descripcion_requisito,
+          (
+            SELECT
+              json_agg(sd.nombre_subdescripcion)
+            FROM
+            "SubDescripcion" sd
+            WHERE
+              sd.fk_documento = dc.id_documento
+          ) sb_name,
+          ud.drive_link,
+          ud.estado,
+          u.codigo_usuario
+        FROM
+          "Documento" dc
+        LEFT JOIN
+          "UsuarioDocumento" ud
+          ON dc.id_documento = ud.fk_documento
+        LEFT JOIN
+          "Usuario" u ON u.usuario_id = ud.fk_usuario AND u.codigo_usuario = $1
+        WHERE
+          dc.tipo_procedimiento = $2;
+        `,
+        [userCode, userType = 'egresado']
+      )
+      userDocuments = result.rows;
     } catch (error) {
       throw new Error(error.message)
     }
+    return JSON.stringify(userDocuments);
   }
 }
