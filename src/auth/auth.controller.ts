@@ -16,6 +16,7 @@ import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
 import { LoginUserDto } from './dto/login-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
+import { useContainer } from 'class-validator';
 
 @Controller('auth')
 export class AuthController {
@@ -34,24 +35,14 @@ export class AuthController {
       loginUserDto.contrasenia
     );
 
-    // create a custom object
-    const authJson = {
-      userdata: usuario,
-      token: token
-    }
-
-    const cookieAuthJson = JSON.stringify(authJson)
-
-    res.cookie('auth_cookie', cookieAuthJson, {
+    res.cookie('auth_cookie', token, {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
       maxAge: 3600000
     });
 
-    return {
-      status: "ok"
-    }
+    return usuario;
   }
 
   @HttpCode(HttpStatus.OK)
@@ -62,24 +53,15 @@ export class AuthController {
   ) {
     const { newuser, token } = await this.authService.signUp(registerUserDto);
 
-    // create a custom object
-    const authJson = {
-      userdata: newuser,
-      token: token
-    }
-
-    const cookieAuthJson = JSON.stringify(authJson)
-
-    res.cookie('auth_cookie', cookieAuthJson, {
+    res.cookie('auth_cookie', token, {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
       maxAge: 3600000
     });
 
-    return {
-      status: "ok"
-    }
+    return newuser
+
   }
 
 

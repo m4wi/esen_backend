@@ -1,12 +1,14 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { GoogleDriveStorage } from './storage/google-drive.storage';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class FilesService {
   constructor(
     private googleDriveStorage: GoogleDriveStorage,
     private prismaService: PrismaService, // Replace with actual Prisma service
+    private databaseService: DatabaseService
   ) { }
 
 
@@ -17,17 +19,12 @@ export class FilesService {
     userId: number
   ) {
     let folderId: string | null = '';
-
-    const userFolderId = await this.prismaService.usuario.findFirstOrThrow({
-      where: {
-        usuario_id: userId
-      },
-      select: {
-        drive_folder: true,
-        nombre: true,
-        apellido: true,
-      }
-    });
+    let userFolderId: any;
+    userFolderId = await this.databaseService.query(`
+      SELECT drive_folder, nombre, apellido
+      FROM "Usuario"
+      WHERE usuario_id = 8`
+    );
 
     if (!userFolderId.drive_folder) {
       console.warn('No se encontró la carpeta de usuario. Creando una nueva');
@@ -51,8 +48,8 @@ export class FilesService {
   ) {
 
     let folderId: string | null = '';
-
-    const userFolderId = await this.prismaService.usuario.findFirstOrThrow({
+    let userFolderId:any;
+    userFolderId = await this.prismaService.usuario.findFirstOrThrow({
       where: {
         usuario_id: userId
       },

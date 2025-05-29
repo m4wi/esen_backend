@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { readFile, writeFile } from 'fs/promises';
 import { StorageStrategy } from './storage.interface';
 import { authenticate } from '@google-cloud/local-auth';
@@ -6,10 +6,13 @@ import { google } from 'googleapis';
 import * as path from 'path';
 import { Readable } from 'stream';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { DatabaseService } from 'src/database/database.service';
+import { log } from 'console';
 
 @Injectable()
 export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
 
+  private readonly logger : Logger = new Logger(GoogleDriveStorage.name)
   private token: any;
   private cedentials: any;
   private drive: any;
@@ -20,8 +23,11 @@ export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
   private SCOPES = ['https://www.googleapis.com/auth/drive'];
 
   constructor(
-    private prisma: PrismaService
-  ) {}
+    private prisma: PrismaService,
+    private databaseService: DatabaseService
+  ) {
+
+  }
 
 
 
@@ -39,23 +45,29 @@ export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
       }
     }
 
+    this.logger.log('Loaded remote config');
     this.initGoogleAuthClient();
     this.drive = this.refreshDriveApiClient();
   }
 
   // carga todos las credenciales que necesita la aplicacion para trabajar con la API de google drive
   async loadRemoteAppConfig() {
+    let appConfig: any;
     try {
-      const appConfig = await this.prisma.appConfig.findFirstOrThrow({
-        where: {
-          id_appconfig: 1
-        },
-        select: {
-          rootDriveId: true,
-          token: true,
-          credentials: true,
-        }
-      })
+      const result = await this.databaseService.query(
+        `
+          SELECT 
+            "rootDriveId",
+            "token",
+            "credentials"
+          FROM "AppConfig"
+          WHERE "id_appconfig" = 1
+          LIMIT 1
+
+        `
+      );
+
+      appConfig = result.rows[0];
 
       if (!appConfig) {
         throw new Error('No se encontró la configuración de la aplicación');

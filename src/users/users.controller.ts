@@ -8,12 +8,11 @@ import {
   HttpStatus,
   UseInterceptors,
   UploadedFile,
-  UploadedFiles
+  UploadedFiles,
+  Query
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { FilesService } from '../files/files.service';
-import { create } from 'domain';
-import { CreateUserFolderDto } from './dto/create-user-folder.dto';
 import { UsersService } from './users.service';
 
 
@@ -85,7 +84,8 @@ export class UserController {
   @Get('documents/:userCode') 
   getUserDocumentsInfo(
     @Param('userCode') userCode: string,
+    @Query('usertype') userType: string
   ) {
-    return this.usersService.listarDocumentosUsuario(userCode)
+    return this.usersService.listarDocumentosUsuario(userCode, userType);
   }
 }

@@ -10,11 +10,13 @@ import { JwtService } from '@nestjs/jwt';
 import { RegisterUserDto } from './dto/register-user.dto';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
+    private databaseService: DatabaseService,
     private readonly jwtService: JwtService
   ) { }
 
@@ -25,21 +27,20 @@ export class AuthService {
 
   async signIn(credencial: string, contrasenia: string): Promise<any> {
     let usuario: any; // add type
+    console.log({credencial, contrasenia})
     try {
-      usuario = await this.prisma.usuario.findFirstOrThrow({
-        where: {
-          OR: [
-            { correo: credencial || ""},
-            { codigo_usuario: credencial || ""}
-          ]
-        },
-        select: {
-          usuario_id: true,
-          rol: true,
-          tipo_usuario: true,
-          contrasenia: true,
-        }
-      })
+      const result = await this.databaseService.query(
+        `
+        SELECT 
+          u.usuario_id,
+          u.rol,
+          u.tipo_usuario,
+          u.contrasenia
+        FROM "Usuario" as u
+        WHERE u.correo = '${credencial}' OR u.codigo_usuario = '${credencial}'
+        `
+      );
+      usuario = result.rows[0];
     } catch (error) {
       throw new BadRequestException('Wrong credentials');
     }
@@ -66,23 +67,47 @@ export class AuthService {
 
   async signUp(registerUserDto: RegisterUserDto) {
     try {
+      let newuser: any;
       const hashedPassword = await bcrypt.hash(registerUserDto.contrasenia, 10);
       const newUserData = { ...registerUserDto };
       newUserData.contrasenia = hashedPassword;
       console.log(newUserData);
-      const newuser = await this.prisma.usuario.create({
-        data: newUserData,
-        select: {
-          usuario_id: true,
-          nombre: true,
-          apellido: true,
-          correo: true,
-          telefono: true,
-          rol: true,
-          tipo_usuario: true,
-          createdAt: true
-        }
-      });
+      const result = await this.databaseService.query(
+        `
+          INSERT INTO "Usuario" (
+          nombre,
+          apellido,
+          correo,
+          telefono,
+          codigo_usuario,
+          contrasenia,
+          rol,
+          tipo_usuario,
+          drive_folder
+        ) VALUES (
+          '${registerUserDto.nombre}',
+          '${registerUserDto.apellido}',
+          '${registerUserDto.correo}',
+          '${registerUserDto.telefono}',
+          '${registerUserDto.codigo_usuario}',
+          '${registerUserDto.contrasenia}',
+          '${registerUserDto.rol}',
+          '${registerUserDto.tipo_usuario}',
+          '${registerUserDto.drive_folder}'
+        )
+        RETURNING
+          usuario_id,
+          nombre,
+          apellido,
+          correo,
+          telefono,
+          rol,
+          tipo_usuario,
+          createdAt
+        `
+      );
+      
+      newuser = result.rows[0];
       
       const token = this.getJwtToken({
         id: newuser.usuario_id,
