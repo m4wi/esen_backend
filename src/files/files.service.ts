@@ -1,13 +1,11 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { GoogleDriveStorage } from './storage/google-drive.storage';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class FilesService {
   constructor(
     private googleDriveStorage: GoogleDriveStorage,
-    private prismaService: PrismaService, // Replace with actual Prisma service
     private databaseService: DatabaseService
   ) { }
 
@@ -18,26 +16,34 @@ export class FilesService {
     file: Express.Multer.File,
     userId: number
   ) {
-    let folderId: string | null = '';
-    let userFolderId: any;
-    userFolderId = await this.databaseService.query(`
-      SELECT drive_folder, nombre, apellido
-      FROM "Usuario"
-      WHERE usuario_id = 8`
-    );
+    let userFolderId: string | null = '';
+    let userFolderData: any;
+    try {
+      const result = await this.databaseService.query(
+        `
+        SELECT drive_folder, nombre, apellido
+        FROM "Usuario"
+        WHERE usuario_id = $1`,
+        [userId]
+      );
+      userFolderData = result.rows[0];
 
-    if (!userFolderId.drive_folder) {
-      console.warn('No se encontró la carpeta de usuario. Creando una nueva');
-      folderId = await this.googleDriveStorage.createUserFolder(userFolderId.nombre + ' ' + userFolderId.apellido);
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to fetch user folder from database');
     }
 
-    folderId = userFolderId.drive_folder;
+    if (!userFolderData.drive_folder) {
+      console.warn('No se encontró la carpeta de usuario. Creando una nueva');
+      userFolderId = await this.googleDriveStorage.createUserFolder(userFolderData.nombre + ' ' + userFolderData.apellido);
+    }
+
+    userFolderId = userFolderData.drive_folder;
     
-    if (!folderId) {
+    if (!userFolderId) {
       throw new Error('Folder ID is null or undefined');
     }
 
-    return this.googleDriveStorage.upload(file, folderId);
+    return this.googleDriveStorage.upload(file, userFolderId);
   }
 
 
@@ -47,31 +53,35 @@ export class FilesService {
     userId: number
   ) {
 
-    let folderId: string | null = '';
-    let userFolderId:any;
-    userFolderId = await this.prismaService.usuario.findFirstOrThrow({
-      where: {
-        usuario_id: userId
-      },
-      select: {
-        drive_folder: true,
-        nombre: true,
-        apellido: true,
-      }
-    });
+    let userFolderId: string | null = '';
+    let userFolderData : any;
 
-    if (!userFolderId.drive_folder) {
-      console.warn('No se encontró la carpeta de usuario. Creando una nueva');
-      folderId = await this.createUserFolder(userFolderId.nombre + ' ' + userFolderId.apellido, userId);
+    try {
+      const result = await this.databaseService.query(`
+        SELECT drive_folder, nombre, apellido
+        FROM "Usuario"
+        WHERE usuario_id = $1`,
+        [userId]
+      );
+
+      userFolderData = result.rows[0];
+    
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to fetch user folder from database');
     }
 
-    folderId = userFolderId.drive_folder;
+    if (!userFolderData.drive_folder) {
+      console.warn('No se encontró la carpeta de usuario. Creando una nueva');
+      userFolderId = await this.googleDriveStorage.createUserFolder(userFolderData.nombre + ' ' + userFolderData.apellido);
+    }
+
+    userFolderId = userFolderData.drive_folder;
     
-    if (!folderId) {
+    if (!userFolderId) {
       throw new Error('Folder ID is null or undefined');
     }
     return await Promise.all(
-      files.map(file => this.googleDriveStorage.upload(file, folderId))
+      files.map(file => this.googleDriveStorage.upload(file, userFolderId))
     );
   }
 
@@ -107,24 +117,22 @@ export class FilesService {
     userId: number
   ) {
     const folderId = await this.googleDriveStorage.createUserFolder(folderName);
-
+    let newUserFolder : any;
     // Guardamos el FolderId para sincronizar con la base de datos
     try {
-      const newUserFolder = await this.prismaService.usuario.update({
-        where: {
-          usuario_id: userId
-        },
-        data: {
-          drive_folder: folderId
-        },
-        select: {
-          usuario_id: true,
-          drive_folder: true,
-        }
-      });
-
-      return newUserFolder.drive_folder;
-
+      newUserFolder = await this.databaseService.query(
+            `
+            UPDATE "Usuario"
+            SET 
+              drive_folder = $1,
+            WHERE 
+              usuario_id = $2;
+            `,
+            [folderId, userId]
+      );
+      return {
+        status: 'success',
+      }
     } catch (error) {
       throw new InternalServerErrorException('Failed to save folder in database');
     }
@@ -136,15 +144,15 @@ export class FilesService {
     if (!folderId) {
       throw new Error('Failed to create folder');
     }
+    let newAppFolder: any;
     try {
-      const newAppFolder = await this.prismaService.appConfig.create({
-        data: {
-          rootDriveId: folderId
-        },
-        select: {
-          rootDriveId: true,
-        }
-      });
+      newAppFolder = await this.databaseService.query(
+        `
+        INSERT INTO "AppConfig" (root_drive_id)
+        VALUES ($1)
+        `,
+        [folderId]
+      )
       return {
         appId: newAppFolder.rootDriveId
       }
@@ -153,14 +161,4 @@ export class FilesService {
     }
 
   }
-
-  listDocuments(userId: string) {
-    try {
-      
-    } catch (error) {
-
-    }
-  }
-
-
 }

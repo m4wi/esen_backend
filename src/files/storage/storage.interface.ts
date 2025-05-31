@@ -33,6 +33,6 @@ export interface StorageStrategy {
 
   getFileRoute(fileId: string): Promise<string>;
 
-  getFolderRoute(folderId: string): Promise<string>;
+  // getFolderRoute(folderId: string): Promise<string>;
 
 }
