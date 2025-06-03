@@ -68,7 +68,6 @@ export class AuthService {
       const hashedPassword = await bcrypt.hash(registerUserDto.contrasenia, 10);
       const newUserData = { ...registerUserDto };
       newUserData.contrasenia = hashedPassword;
-      console.log(newUserData);
       const result = await this.databaseService.query(
         `
           INSERT INTO "Usuario" (
@@ -84,15 +83,15 @@ export class AuthService {
           created_at,
           updated_at
         ) VALUES (
-          '${registerUserDto.nombre}',
-          '${registerUserDto.apellido}',
-          '${registerUserDto.correo}',
-          '${registerUserDto.telefono}',
-          '${registerUserDto.codigo_usuario}',
-          '${registerUserDto.contrasenia}',
-          '${registerUserDto.rol}',
-          '${registerUserDto.tipo_usuario}',
-          '${registerUserDto.drive_folder}',
+          '${newUserData.nombre}',
+          '${newUserData.apellido}',
+          '${newUserData.correo}',
+          '${newUserData.telefono}',
+          '${newUserData.codigo_usuario}',
+          '${newUserData.contrasenia}',
+          '${newUserData.rol}',
+          '${newUserData.tipo_usuario}',
+          '${newUserData.drive_folder}',
           NOW(),
           NOW()
         )
