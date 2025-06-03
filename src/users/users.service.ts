@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
-import { PrismaService } from 'src/prisma/prisma.service';
 
 // TODO: add interface representing a user entity 
 export type User = any;
@@ -9,7 +8,6 @@ export type User = any;
 @Injectable()
 export class UsersService {
   constructor(
-    private prismaService: PrismaService,
     private databaseService: DatabaseService
   ){}
 

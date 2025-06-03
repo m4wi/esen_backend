@@ -63,7 +63,7 @@ export class UserController {
   ) {
     return this.filesService.createUserFolder(body.folderName, body.userId);
   }
-
+  /*
   @HttpCode(HttpStatus.OK)
   @Get('files/list/:userId') 
   getFile(
@@ -71,7 +71,7 @@ export class UserController {
   ) {
     return this.filesService.listDocuments(userId);
   }
-
+  */
   @HttpCode(HttpStatus.OK)
   @Get(':userCode') 
   getUserInfo(

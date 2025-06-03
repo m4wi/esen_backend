@@ -5,7 +5,6 @@ import { authenticate } from '@google-cloud/local-auth';
 import { google } from 'googleapis';
 import * as path from 'path';
 import { Readable } from 'stream';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { DatabaseService } from 'src/database/database.service';
 import { log } from 'console';
 
@@ -23,14 +22,10 @@ export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
   private SCOPES = ['https://www.googleapis.com/auth/drive'];
 
   constructor(
-    private prisma: PrismaService,
     private databaseService: DatabaseService
   ) {
 
   }
-
-
-
 
   async onModuleInit() {
 
@@ -122,6 +117,7 @@ export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
 
 
 // ## No necesaria aun. Solo en caso de no tener root folder !!INECESARIO , tenemos la carga de la app por la base de datos
+/*
   async loadRootFolderIdIfExists(): Promise<string | null> {
     try {
       const appConfig = await this.prisma.appConfig.findFirstOrThrow({
@@ -140,7 +136,7 @@ export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
       throw new Error('Error loading root folder ID: ' + error.message);
     }
   }
-
+*/
 // ## No necesaria aun. Solo en caso de no tener root folder
   async createUserRootFolder(folderName: string): Promise<any> {
     const drive = google.drive({version: 'v3', auth: this.authClient});
@@ -199,7 +195,7 @@ export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
 
     const response = await this.drive.files.create({
       requestBody: {
-        name: file.originalname,
+        name: file.filename,
         mimeType: file.mimetype,
         parents: [folderId], // opcional
       },
@@ -300,7 +296,7 @@ export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
       throw new Error('Error al obtener el archivo');
     }
   }
-
+  /*
   async getFolderRoute(folderId: string): Promise<any> {
     try {
       const folder = await this.prisma.usuario.findFirstOrThrow({
@@ -323,4 +319,5 @@ export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
       throw new Error('Error al obtener la carpeta');
     }
   }
+    */
 }
