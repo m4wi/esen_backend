@@ -80,7 +80,9 @@ export class AuthService {
           contrasenia,
           rol,
           tipo_usuario,
-          drive_folder
+          drive_folder,
+          created_at,
+          updated_at
         ) VALUES (
           '${registerUserDto.nombre}',
           '${registerUserDto.apellido}',
@@ -90,7 +92,9 @@ export class AuthService {
           '${registerUserDto.contrasenia}',
           '${registerUserDto.rol}',
           '${registerUserDto.tipo_usuario}',
-          '${registerUserDto.drive_folder}'
+          '${registerUserDto.drive_folder}',
+          NOW(),
+          NOW()
         )
         RETURNING
           usuario_id,
@@ -99,8 +103,7 @@ export class AuthService {
           correo,
           telefono,
           rol,
-          tipo_usuario,
-          createdAt
+          tipo_usuario
         `
       );
       
