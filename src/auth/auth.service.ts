@@ -32,7 +32,8 @@ export class AuthService {
           u.usuario_id,
           u.rol,
           u.tipo_usuario,
-          u.contrasenia
+          u.contrasenia,
+          u.codigo_usuario
         FROM "Usuario" as u
         WHERE u.correo = '${credencial}' OR u.codigo_usuario = '${credencial}'
         `
