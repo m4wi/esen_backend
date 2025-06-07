@@ -33,7 +33,8 @@ export class AuthService {
           u.rol,
           u.tipo_usuario,
           u.contrasenia,
-          u.codigo_usuario
+          u.codigo_usuario,
+          u.drive_folder
         FROM "Usuario" as u
         WHERE u.correo = '${credencial}' OR u.codigo_usuario = '${credencial}'
         `

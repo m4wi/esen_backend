@@ -79,7 +79,10 @@ export class UsersService {
           ) sb_name,
           ud.drive_link,
           ud.estado,
-          u.codigo_usuario
+          u.codigo_usuario,
+          dc.id_documento,
+          dc.doc_ejemplo,
+          dc.doc_modelo
         FROM
           "Documento" dc
         LEFT JOIN
