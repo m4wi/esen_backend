@@ -9,9 +9,6 @@ export class FilesService {
     private databaseService: DatabaseService
   ) { }
 
-
-
-
   async uploadSingleFile(
     file: Express.Multer.File,
     userId: number
@@ -32,20 +29,36 @@ export class FilesService {
       throw new InternalServerErrorException('Failed to fetch user folder from database');
     }
 
+    userFolderId = userFolderData.drive_folder;
+
     if (!userFolderData.drive_folder) {
       console.warn('No se encontró la carpeta de usuario. Creando una nueva');
       userFolderId = await this.googleDriveStorage.createUserFolder(userFolderData.nombre + ' ' + userFolderData.apellido);
+      try {
+        const result = await this.databaseService.query(
+          `
+          UPDATE "Usuario"
+          SET 
+            drive_folder = $1
+          WHERE 
+            usuario_id = $2;
+          `,
+          [userFolderId, userId]
+        );
+        if (result.rowCount === 0) {
+          throw new InternalServerErrorException('No user found with the provided ID');
+        }
+      } catch (error) {
+        throw new InternalServerErrorException('Failed to update user folder');
+      }
     }
 
-    userFolderId = userFolderData.drive_folder;
-    
     if (!userFolderId) {
       throw new Error('Folder ID is null or undefined');
     }
 
     return this.googleDriveStorage.upload(file, userFolderId);
   }
-
 
 
   async uploadFiles(

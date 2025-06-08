@@ -195,7 +195,7 @@ export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
 
     const response = await this.drive.files.create({
       requestBody: {
-        name: file.filename,
+        name: file.originalname,
         mimeType: file.mimetype,
         parents: [folderId], // opcional
       },
