@@ -11,7 +11,8 @@ export class FilesService {
 
   async uploadSingleFile(
     file: Express.Multer.File,
-    userId: number
+    userId: number,
+    documentId: number
   ) {
     let userFolderId: string | null = '';
     let userFolderData: any;
@@ -57,7 +58,33 @@ export class FilesService {
       throw new Error('Folder ID is null or undefined');
     }
 
-    return this.googleDriveStorage.upload(file, userFolderId);
+    const fileId = await this.googleDriveStorage.upload(file, userFolderId);
+    if (!fileId) {
+      throw new InternalServerErrorException('Failed to upload file to Google Drive');
+    }
+    
+    try {
+      const formatedlink : string = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+
+      const result = await this.databaseService.query(
+        `
+        INSERT INTO "UsuarioDocumento" (fk_usuario, fk_documento, drive_link, created_at, updated_at)
+        VALUES ($2, $3, $1, NOW(), NOW())
+        ON CONFLICT (fk_usuario, fk_documento)
+        DO UPDATE SET drive_link = EXCLUDED.drive_link, updated_at = NOW();
+        `,
+        [formatedlink, userId, documentId]
+      )
+      if (result.rowCount === 0) {
+        throw new InternalServerErrorException('No document link updated in the database');
+      }
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to update document link in database');
+    }
+    return {
+      status: 'success',
+      fileId: fileId
+    };
   }
 
 

@@ -89,9 +89,11 @@ export class UsersService {
           "UsuarioDocumento" ud
           ON dc.id_documento = ud.fk_documento
         LEFT JOIN
-          "Usuario" u ON u.usuario_id = ud.fk_usuario AND u.codigo_usuario = $1
+          "Usuario" u 
+          ON u.usuario_id = ud.fk_usuario
         WHERE
           dc.tipo_procedimiento = $2;
+          AND (u.codigo_usuario = $1 OR u.codigo_usuario IS NULL);
         `,
         [userCode, userType = 'egresado']
       )

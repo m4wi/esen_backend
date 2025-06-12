@@ -205,11 +205,7 @@ export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
       },
       fields: 'id, name',
     });
-    return {
-      message: 'Archivo subido exitosamente',
-      fileId: response.data.id,
-      fileName: response.data.name,
-    };
+    return response.data.id
   }
 
 

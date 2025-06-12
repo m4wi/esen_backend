@@ -28,9 +28,9 @@ export class UserController {
   @UseInterceptors(FileInterceptor('file'))
   uploadSingleFile(
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { userId: number }
+    @Body() body: { userId: number, documentId: number }
   ) {
-    return this.filesService.uploadSingleFile(file, body.userId);
+    return this.filesService.uploadSingleFile(file, body.userId, body.documentId);
   }
 
   @Post('upload/multiple')
