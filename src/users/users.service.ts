@@ -92,7 +92,7 @@ export class UsersService {
           "Usuario" u 
           ON u.usuario_id = ud.fk_usuario
         WHERE
-          dc.tipo_procedimiento = $2;
+          dc.tipo_procedimiento = $2
           AND (u.codigo_usuario = $1 OR u.codigo_usuario IS NULL);
         `,
         [userCode, userType = 'egresado']
