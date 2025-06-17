@@ -88,4 +88,19 @@ export class UserController {
   ) {
     return this.usersService.listarDocumentosUsuario(userCode, userType);
   }
+
+  @HttpCode(HttpStatus.OK)
+  @Get('documents/review/:userCode')
+  checkedUserDocumentState(
+    @Query('state') state: string,
+    @Param('userCode') userCode: string
+  ) {
+    return this.usersService.getUserDocumentPerState( state , userCode);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Get('tramite/checked')
+  checkedUserDocumentsInfo() {
+    return this.usersService.documentsToReview();
+  }
 }
