@@ -110,8 +110,10 @@ export class UsersService {
         `
         SELECT
           ud.fk_usuario,
-          json_agg(
-            json_build_object(
+          CONCAT(u.nombre, ' ', u.apellido) AS nombre_completo,
+          u.tipo_usuario,
+          JSON_AGG(
+            JSON_BUILD_OBJECT(
               'nombre_documento', dc.nombre_documento,
               'id_documento', dc.id_documento,
               'updated_at', ud.updated_at,
@@ -119,17 +121,22 @@ export class UsersService {
               'drive_link', ud.drive_link
             )
             ORDER BY ud.updated_at DESC
-          ) AS documentos_observacion
+          ) AS documentos_observacion,
+          COUNT(*) AS cantidad_documentos
         FROM
           "UsuarioDocumento" ud
         JOIN
           "Documento" dc ON dc.id_documento = ud.fk_documento
+        JOIN
+          "Usuario" u ON u.usuario_id = ud.fk_usuario
         WHERE
-          ud.estado = 'vacio'
+          ud.estado = 'observacion'
         GROUP BY
-          ud.fk_usuario
+          ud.fk_usuario,
+          CONCAT(u.nombre, ' ', u.apellido),
+          u.tipo_usuario
         HAVING
-          COUNT(*) >= 2;
+          COUNT(*) >= 3;
         `
       );
       documentsToReview = result.rows;
