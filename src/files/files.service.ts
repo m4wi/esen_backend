@@ -68,8 +68,8 @@ export class FilesService {
 
       const result = await this.databaseService.query(
         `
-        INSERT INTO "UsuarioDocumento" (fk_usuario, fk_documento, drive_link, created_at, updated_at)
-        VALUES ($2, $3, $1, NOW(), NOW())
+        INSERT INTO "UsuarioDocumento" (fk_usuario, fk_documento, drive_link, estado, created_at, updated_at)
+        VALUES ($2, $3, $1, observacion, NOW(), NOW())
         ON CONFLICT (fk_usuario, fk_documento)
         DO UPDATE SET drive_link = EXCLUDED.drive_link, updated_at = NOW();
         `,
