@@ -50,5 +50,19 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       throw error;
     }
   }
+
+  async withTransaction(callback: (client: PoolClient) => Promise<void>) {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await callback(client);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
 }
 

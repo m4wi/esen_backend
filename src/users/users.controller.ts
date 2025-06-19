@@ -14,6 +14,7 @@ import {
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { FilesService } from '../files/files.service';
 import { UsersService } from './users.service';
+import { CreateUserObservationDto } from './dto/create-user-observation.dto';
 
 
 @Controller('users')
@@ -102,5 +103,13 @@ export class UserController {
   @Get('tramite/checked')
   checkedUserDocumentsInfo() {
     return this.usersService.documentsToReview();
+  }
+
+    @HttpCode(HttpStatus.OK)
+  @Post('observation')
+  saveObservationToUser(
+    @Body() createUserObservationDto: CreateUserObservationDto
+  ) {
+    return this.usersService.saveObservacion(createUserObservationDto);
   }
 }
