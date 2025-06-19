@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
+import { CreateUserObservationDto } from './dto/create-user-observation.dto';
 
 // TODO: add interface representing a user entity 
 export type User = any;
@@ -178,5 +179,40 @@ export class UsersService {
       throw new Error(error.message);
     }
     return JSON.stringify(userDocumentsPerState);
+  }
+
+  async saveObservacion(createUserObservationDto: CreateUserObservationDto) {
+
+    try {
+      await this.databaseService.withTransaction(async (client) => {
+        await client.query(
+          `
+            INSERT INTO "Observacion" (fk_emisor, fk_receptor, contenido, fecha, descripcion) VALUES
+            ($1, $2, $3, NOW(), 'ninguna')
+          `,[createUserObservationDto.fk_usuario_emisor, createUserObservationDto.fk_usuario_receptor, createUserObservationDto.observacion]
+        );
+        
+        if (createUserObservationDto.documentos_observacion.length > 0) {
+          const ids = createUserObservationDto.documentos_observacion.map(doc => doc.id_documento);
+          const stateCases = createUserObservationDto.documentos_observacion
+          .map(doc => `WHEN ${doc.id_documento} THEN '${doc.estado}'::"EstadoDocumento"` )
+          .join('\n');
+
+          const interpolatedQuery = 
+          `
+            UPDATE "UsuarioDocumento"
+            SET estado = CASE id_udoc
+              ${stateCases}
+            END
+            WHERE id_udoc IN (${ids.join(',')});
+          `;
+
+          await client.query(interpolatedQuery);
+        }
+      });
+      return { message: 'Observación guardada correctamente' };
+    } catch (error) {
+      throw new Error(error.message);
+    }
   }
 }
