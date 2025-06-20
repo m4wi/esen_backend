@@ -6,4 +6,7 @@ export class UpdateObservationDocumentDto {
 
   @IsString()
   estado: string;
+
+  @IsString()
+  observacion: string;
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateUserObservationDto } from './dto/create-user-observation.dto';
 
@@ -185,29 +185,66 @@ export class UsersService {
 
     try {
       await this.databaseService.withTransaction(async (client) => {
-        await client.query(
-          `
-            INSERT INTO "Observacion" (fk_emisor, fk_receptor, contenido, fecha, descripcion) VALUES
-            ($1, $2, $3, NOW(), 'ninguna')
-          `,[createUserObservationDto.fk_usuario_emisor, createUserObservationDto.fk_usuario_receptor, createUserObservationDto.observacion]
-        );
-        
+
         if (createUserObservationDto.documentos_observacion.length > 0) {
-          const ids = createUserObservationDto.documentos_observacion.map(doc => doc.id_documento);
-          const stateCases = createUserObservationDto.documentos_observacion
-          .map(doc => `WHEN ${doc.id_documento} THEN '${doc.estado}'::"EstadoDocumento"` )
-          .join('\n');
+          // Validar constraints antes de insertar
+          if (createUserObservationDto.fk_usuario_emisor === createUserObservationDto.fk_usuario_receptor) {
+            throw new BadRequestException('El emisor no puede ser el mismo que el receptor');
+          }
 
-          const interpolatedQuery = 
-          `
-            UPDATE "UsuarioDocumento"
-            SET estado = CASE id_udoc
-              ${stateCases}
-            END
-            WHERE id_udoc IN (${ids.join(',')});
-          `;
+          // Insertar observaciones una por una para mejor manejo de errores
+          for (const doc of createUserObservationDto.documentos_observacion) {
+            // Validar contenido no vacío
+            if (!doc.observacion || doc.observacion.trim().length === 0) {
+              throw new BadRequestException('El contenido de la observación no puede estar vacío');
+            }
 
-          await client.query(interpolatedQuery);
+            const insertQuery = `
+              INSERT INTO "Observacion" (
+                fk_emisor, 
+                fk_receptor, 
+                fk_usuario_documento, 
+                contenido, 
+                descripcion,
+                fecha,
+                created_at,
+                updated_at
+              ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), NOW())
+            `;
+
+            const params = [
+              createUserObservationDto.fk_usuario_emisor,
+              createUserObservationDto.fk_usuario_receptor,
+              doc.id_documento,
+              doc.observacion.trim(),
+              'ninguna', // descripcion
+            ];
+
+            await client.query(insertQuery, params);
+          }
+
+          const documentIds = createUserObservationDto.documentos_observacion.map(doc => doc.id_documento);
+          
+          if (documentIds.length > 0) {
+            // Construir query con parámetros para prevenir SQL injection
+            const updateQuery = `
+              UPDATE "UsuarioDocumento"
+              SET estado = CASE id_udoc
+                ${createUserObservationDto.documentos_observacion
+                  .map((_, index) => `WHEN $${index + 1} THEN $${index + 1 + documentIds.length}::"EstadoDocumento"`)
+                  .join('\n')}
+              END
+              WHERE id_udoc IN (${documentIds.map((_, index) => `$${index + 1}`).join(',')})
+            `;
+
+            // Preparar parámetros: primero los IDs, luego los estados
+            const updateParams = [
+              ...documentIds,
+              ...createUserObservationDto.documentos_observacion.map(doc => doc.estado)
+            ];
+
+            await client.query(updateQuery, updateParams);
+          }
         }
       });
       return { message: 'Observación guardada correctamente' };
