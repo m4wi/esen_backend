@@ -11,19 +11,39 @@ import {
   Res,
   } from '@nestjs/common';
 import { Response } from 'express';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiResponse, 
+  ApiBody,
+} from '@nestjs/swagger';
 
 import { AuthService } from './auth.service';
-import { AuthGuard } from './auth.guard';
-import { LoginUserDto } from './dto/login-user.dto';
+import { LoginUserDto, UserResponseDto } from './dto/login-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
-import { useContainer } from 'class-validator';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
 
   constructor(
     private authService: AuthService
   ) { }
+
+  @ApiOperation({ 
+    summary: 'Iniciar sesión',
+    description: 'Autentica al usuario y devuelve un token JWT en una cookie'
+  })
+  @ApiBody({ type: LoginUserDto })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Usuario autenticado exitosamente',
+    type: UserResponseDto
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Credenciales inválidas' 
+  })
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async signIn(
@@ -45,6 +65,24 @@ export class AuthController {
     return usuario;
   }
 
+  @ApiOperation({ 
+    summary: 'Registrar nuevo usuario',
+    description: 'Crea una nueva cuenta de usuario y devuelve un token JWT en una cookie'
+  })
+  @ApiBody({ type: RegisterUserDto })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Usuario registrado exitosamente',
+    type: UserResponseDto
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Datos de entrada inválidos' 
+  })
+  @ApiResponse({ 
+    status: 409, 
+    description: 'El usuario ya existe' 
+  })
   @HttpCode(HttpStatus.OK)
   @Post('register')
   async signUp(
@@ -63,16 +101,4 @@ export class AuthController {
     return newuser
 
   }
-
-
-  // Example to guard a route
-  /*
-  @UseGuards(AuthGuard)
-  @Get('profile')
-  getProfile(@Request() req) {
-    return req.user;
-  }
-  */
-
-
 }
