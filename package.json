@@ -19,6 +19,12 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:auth": "jest --testPathPattern=auth",
+    "test:auth:watch": "jest --testPathPattern=auth --watch",
+    "test:auth:e2e": "jest --config ./test/jest-e2e.json --testPathPattern=auth.e2e-spec.ts",
+    "test:database": "jest --testPathPattern=database",
+    "test:database:watch": "jest --testPathPattern=database --watch",
+    "test:database:e2e": "jest --config ./test/jest-e2e.json --testPathPattern=database.e2e-spec.ts",
     "deploy": "fly deploy"
   },
   "dependencies": {
