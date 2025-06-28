@@ -5,6 +5,7 @@
 /generated
 /database
 /secrets
+/prisma
 .env
 
 # Logs

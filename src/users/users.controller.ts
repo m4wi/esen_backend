@@ -12,11 +12,13 @@ import {
   Query
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { FilesService } from '../files/files.service';
 import { UsersService } from './users.service';
 import { CreateUserObservationDto } from './dto/create-user-observation.dto';
+import { CreatePreguntaDto, PreguntaResponseDto } from './dto/create-pregunta.dto';
 
-
+@ApiTags('users')
 @Controller('users')
 export class UserController {
   constructor(
@@ -105,11 +107,26 @@ export class UserController {
     return this.usersService.documentsToReview();
   }
 
-    @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.OK)
   @Post('observation')
   saveObservationToUser(
     @Body() createUserObservationDto: CreateUserObservationDto
   ) {
     return this.usersService.saveObservacion(createUserObservationDto);
+  }
+
+  @ApiOperation({ summary: 'Crear una nueva pregunta' })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Pregunta creada exitosamente',
+    type: PreguntaResponseDto 
+  })
+  @ApiResponse({ status: 400, description: 'Datos inválidos o usuario no encontrado' })
+  @HttpCode(HttpStatus.CREATED)
+  @Post('pregunta')
+  saveQuestionToUser(
+    @Body() createPreguntaDto: CreatePreguntaDto
+  ): Promise<any> {
+    return this.usersService.savePregunta(createPreguntaDto);
   }
 }

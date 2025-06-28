@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateUserObservationDto } from './dto/create-user-observation.dto';
+import { CreatePreguntaDto, PreguntaResponseDto } from './dto/create-pregunta.dto';
 
 // TODO: add interface representing a user entity 
 export type User = any;
@@ -109,35 +110,48 @@ export class UsersService {
     try {
       const result = await this.databaseService.query(
         `
-        SELECT
-          ud.fk_usuario,
-          CONCAT(u.nombre, ' ', u.apellido) AS nombre_completo,
-          u.tipo_usuario,
-          JSON_AGG(
-            JSON_BUILD_OBJECT(
-              'nombre_documento', dc.nombre_documento,
-              'id_documento', dc.id_documento,
-              'updated_at', ud.updated_at,
-              'id_udoc', ud.id_udoc,
-              'drive_link', ud.drive_link
-            )
-            ORDER BY ud.updated_at DESC
-          ) AS documentos_observacion,
-          COUNT(*) AS cantidad_documentos
-        FROM
-          "UsuarioDocumento" ud
-        JOIN
-          "Documento" dc ON dc.id_documento = ud.fk_documento
-        JOIN
-          "Usuario" u ON u.usuario_id = ud.fk_usuario
-        WHERE
-          ud.estado = 'observacion'
-        GROUP BY
-          ud.fk_usuario,
-          CONCAT(u.nombre, ' ', u.apellido),
-          u.tipo_usuario
-        HAVING
-          COUNT(*) >= 3;
+          SELECT
+            ud.fk_usuario,
+            CONCAT(u.nombre, ' ', u.apellido) AS nombre_completo,
+            u.tipo_usuario,
+            JSON_AGG(
+              JSON_BUILD_OBJECT(
+                'nombre_documento', dc.nombre_documento,
+                'id_documento', dc.id_documento,
+                'updated_at', ud.updated_at,
+                'id_udoc', ud.id_udoc,
+                'drive_link', ud.drive_link
+              )
+              ORDER BY ud.updated_at DESC
+            ) AS documentos_observacion,
+            COUNT(*) AS cantidad_documentos,
+            (
+              SELECT JSON_AGG(
+                JSON_BUILD_OBJECT(
+                  'pregunta', pr.pregunta,
+                  'fecha_respuesta', pr.fecha_respuesta
+                )
+                ORDER BY pr.fecha_respuesta DESC
+              )
+              FROM "Preguntas" pr
+              WHERE pr.fk_usuario = ud.fk_usuario
+                AND pr.fecha_respuesta IS NULL
+              LIMIT 2
+            ) AS preguntas_sin_responder
+          FROM
+            "UsuarioDocumento" ud
+          JOIN
+            "Documento" dc ON dc.id_documento = ud.fk_documento
+          JOIN
+            "Usuario" u ON u.usuario_id = ud.fk_usuario
+          WHERE
+            ud.estado = 'observacion'
+          GROUP BY
+            ud.fk_usuario,
+            CONCAT(u.nombre, ' ', u.apellido),
+            u.tipo_usuario
+          HAVING
+            COUNT(*) >= 3;
         `
       );
       documentsToReview = result.rows;
@@ -250,6 +264,69 @@ export class UsersService {
       return { message: 'Observación guardada correctamente' };
     } catch (error) {
       throw new Error(error.message);
+    }
+  }
+
+  // =============================================================================
+  // MÉTODO PARA GUARDAR PREGUNTAS
+  // =============================================================================
+
+  async savePregunta(createPreguntaDto: CreatePreguntaDto): Promise<any> {
+    try {
+      // Validar que la pregunta no esté vacía
+      if (!createPreguntaDto.pregunta || createPreguntaDto.pregunta.trim().length === 0) {
+        throw new BadRequestException('El contenido de la pregunta no puede estar vacío');
+      }
+
+      // Validar que el usuario existe
+      //const userQuery = `SELECT usuario_id FROM "Usuario" WHERE usuario_id = $1`;
+      //const userResult = await this.databaseService.query(userQuery, [createPreguntaDto.fk_usuario]);
+      
+      //if (userResult.rows.length === 0) {
+      //  throw new BadRequestException('Usuario no encontrado');
+      //}
+
+      const insertQuery = `
+        INSERT INTO "Preguntas" (
+          pregunta,
+          respuesta,
+          fk_usuario
+        ) VALUES ($1, $2, $3)
+        RETURNING *
+      `;
+
+      const params = [
+        createPreguntaDto.pregunta.trim(),
+        createPreguntaDto.respuesta?.trim() || null,
+        createPreguntaDto.fk_usuario
+      ];
+
+      const result = await this.databaseService.query(insertQuery, params);
+      return {
+        message: 'Pregunta guardada correctamente',
+      }
+      // Obtener información del usuario para la respuesta
+      // const userInfoQuery = `
+      //  SELECT nombre, apellido, codigo_usuario 
+      //  FROM "Usuario" 
+      //  WHERE usuario_id = $1
+      //`;
+      
+      //const userInfo = await this.databaseService.query(userInfoQuery, [createPreguntaDto.fk_usuario]);
+      
+      //const preguntaResponse: PreguntaResponseDto = {
+      //  ...result.rows[0],
+      //  nombre: userInfo.rows[0]?.nombre,
+      //  apellido: userInfo.rows[0]?.apellido,
+      //  codigo_usuario: userInfo.rows[0]?.codigo_usuario
+      //};
+
+      //return preguntaResponse;
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException(`Error al guardar pregunta: ${error.message}`);
     }
   }
 }
