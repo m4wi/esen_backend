@@ -3,6 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { DatabaseService } from '../database/database.service';
 import { CreateUserObservationDto } from './dto/create-user-observation.dto';
+import { CreatePreguntaDto } from './dto/create-pregunta.dto';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -194,6 +195,69 @@ describe('UsersService', () => {
 
       // Assert
       expect(mockClient.query).not.toHaveBeenCalled(); // No queries should be executed
+    });
+  });
+
+  describe('savePregunta', () => {
+    const mockCreatePreguntaDto: CreatePreguntaDto = {
+      pregunta: '¿Cómo cambiar mi contraseña?',
+      respuesta: 'Ve al menú de configuración',
+      fk_usuario: 1
+    };
+
+    const mockPreguntaResponse = {
+      id_pregunta: 1,
+      pregunta: '¿Cómo cambiar mi contraseña?',
+      respuesta: 'Ve al menú de configuración',
+      fecha_creacion: new Date(),
+      fecha_respuesta: null,
+      fk_usuario: 1,
+      nombre: 'Juan',
+      apellido: 'Pérez',
+      codigo_usuario: '2021001'
+    };
+
+    it('should save a pregunta successfully', async () => {
+      const mockUserResult = { rows: [{ usuario_id: 1 }] };
+      const mockInsertResult = { rows: [mockPreguntaResponse] };
+      const mockUserInfoResult = { 
+        rows: [{ nombre: 'Juan', apellido: 'Pérez', codigo_usuario: '2021001' }] 
+      };
+
+      jest.spyOn(databaseService, 'query')
+        .mockResolvedValueOnce(mockUserResult) // Validar usuario
+        .mockResolvedValueOnce(mockInsertResult) // Insertar pregunta
+        .mockResolvedValueOnce(mockUserInfoResult); // Obtener info usuario
+
+      const result = await service.savePregunta(mockCreatePreguntaDto);
+
+      expect(databaseService.query).toHaveBeenCalledTimes(3);
+      expect(result).toEqual(mockPreguntaResponse);
+    });
+
+    it('should throw BadRequestException when pregunta is empty', async () => {
+      const emptyPreguntaDto = { ...mockCreatePreguntaDto, pregunta: '' };
+
+      await expect(service.savePregunta(emptyPreguntaDto))
+        .rejects
+        .toThrow('El contenido de la pregunta no puede estar vacío');
+    });
+
+    it('should throw BadRequestException when user not found', async () => {
+      const mockUserResult = { rows: [] };
+      jest.spyOn(databaseService, 'query').mockResolvedValue(mockUserResult);
+
+      await expect(service.savePregunta(mockCreatePreguntaDto))
+        .rejects
+        .toThrow('Usuario no encontrado');
+    });
+
+    it('should handle database errors', async () => {
+      jest.spyOn(databaseService, 'query').mockRejectedValue(new Error('Database error'));
+
+      await expect(service.savePregunta(mockCreatePreguntaDto))
+        .rejects
+        .toThrow('Error al guardar pregunta: Database error');
     });
   });
 });
