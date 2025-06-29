@@ -1,7 +1,7 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateUserObservationDto } from './dto/create-user-observation.dto';
-import { CreatePreguntaDto, PreguntaResponseDto } from './dto/create-pregunta.dto';
+import { CreatePreguntaDto, PatchPreguntaDto, PreguntaResponseDto } from './dto/create-pregunta.dto';
 
 // TODO: add interface representing a user entity 
 export type User = any;
@@ -327,6 +327,41 @@ export class UsersService {
         throw error;
       }
       throw new BadRequestException(`Error al guardar pregunta: ${error.message}`);
+    }
+  }
+  
+  async partialUpdateQuestion(patchPreguntaDto: PatchPreguntaDto, questionId: number) {
+    try {
+      const updateFields : string[] = [];
+      const updateValues : any[] = [];
+
+      if (patchPreguntaDto.pregunta !== undefined) {
+        updateFields.push(`pregunta = $${updateValues.length + 1}`);
+        updateValues.push(patchPreguntaDto.pregunta.trim());
+      }
+      if (patchPreguntaDto.respuesta !== undefined) {
+        updateFields.push(`respuesta = $${updateValues.length + 1}`);
+        updateValues.push(patchPreguntaDto.respuesta.trim());
+      }
+      if (updateFields.length === 0) {
+        throw new BadRequestException('Debe proporcionar al menos un campo para actualizar.');
+      }
+
+      const partialUpdateQuery = `
+        UPDATE "Preguntas"
+        SET ${ updateFields.join(', ') }
+        WHERE id_pregunta = ${ questionId }
+      `;
+
+      const result = await this.databaseService.query(partialUpdateQuery, updateValues);
+
+      if (result.rowCount === 0) {
+        throw new NotFoundException(`No se encontró la pregunta con id ${questionId}`);
+      }
+
+    } catch (error) {
+      console.error('Error al actualizar la pregunta:', error);
+      throw new InternalServerErrorException('Ocurrió un error al actualizar la pregunta.');
     }
   }
 }

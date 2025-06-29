@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsOptional, IsInt } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
 
 export class CreatePreguntaDto {
   @ApiProperty({
@@ -26,6 +27,8 @@ export class CreatePreguntaDto {
   @IsInt()
   fk_usuario: number;
 }
+
+export class PatchPreguntaDto extends PartialType(CreatePreguntaDto) {}
 
 export class UpdatePreguntaDto {
   @ApiPropertyOptional({
