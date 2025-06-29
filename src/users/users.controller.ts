@@ -9,14 +9,17 @@ import {
   UseInterceptors,
   UploadedFile,
   UploadedFiles,
-  Query
+  Query,
+  Patch
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { FilesService } from '../files/files.service';
 import { UsersService } from './users.service';
 import { CreateUserObservationDto } from './dto/create-user-observation.dto';
-import { CreatePreguntaDto, PreguntaResponseDto } from './dto/create-pregunta.dto';
+import { CreatePreguntaDto, PreguntaResponseDto, PatchPreguntaDto } from './dto/create-pregunta.dto';
+import { ParseIntPipe } from '@nestjs/common';
+
 
 @ApiTags('users')
 @Controller('users')
@@ -128,5 +131,15 @@ export class UserController {
     @Body() createPreguntaDto: CreatePreguntaDto
   ): Promise<any> {
     return this.usersService.savePregunta(createPreguntaDto);
+  }
+
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Patch('pregunta/:questionId')
+  partialUpdateQuestion(
+    @Param('questionId', ParseIntPipe) questionId: number,
+    @Body() patchPreguntaDto: PatchPreguntaDto
+  ) {
+    return this.usersService.partialUpdateQuestion(patchPreguntaDto, questionId);
   }
 }
