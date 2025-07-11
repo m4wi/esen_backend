@@ -145,7 +145,7 @@ export class UsersService {
           JOIN
             "Usuario" u ON u.usuario_id = ud.fk_usuario
           WHERE
-            ud.estado = 'observacion'
+            ud.estado = 'enviado' OR ud.estado = 'subido' OR ud.estado = 'corregido'
           GROUP BY
             ud.fk_usuario,
             CONCAT(u.nombre, ' ', u.apellido),
