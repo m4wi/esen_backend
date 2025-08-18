@@ -149,9 +149,7 @@ export class UsersService {
           GROUP BY
             ud.fk_usuario,
             CONCAT(u.nombre, ' ', u.apellido),
-            u.tipo_usuario
-          HAVING
-            COUNT(*) >= 3;
+            u.tipo_usuario;
         `
       );
       documentsToReview = result.rows;
