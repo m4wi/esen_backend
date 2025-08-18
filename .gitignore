@@ -7,7 +7,7 @@
 /secrets
 /prisma
 .env
-
+*.http
 # Logs
 logs
 *.log
