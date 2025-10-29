@@ -70,32 +70,43 @@ export class UsersService {
       const result = await this.databaseService.query(
         `
         SELECT
-          dc.descripcion_requisito,
-          (
+            dc.descripcion_requisito,
+            dc.id_documento,
+            dc.doc_ejemplo,
+            dc.doc_modelo,
+            udData.fk_usuario,
+            (
+                SELECT
+                    json_agg(sd.nombre_subdescripcion)
+                FROM
+                    "SubDescripcion" sd
+                WHERE
+                sd.fk_documento = dc.id_documento
+            ) sb_name,
+            udData.drive_link,
+            udData.estado,
+            udData.id_udoc,
+            udData.codigo_usuario
+        FROM (
             SELECT
-              json_agg(sd.nombre_subdescripcion)
+            ud.fk_usuario,
+            ud.drive_link,
+            ud.estado,
+            ud.id_udoc,
+            u.codigo_usuario
             FROM
-            "SubDescripcion" sd
+                "Usuario" u
+            INNER JOIN
+                "UsuarioDocumento" ud
+                ON u.usuario_id = ud.fk_usuario
             WHERE
-              sd.fk_documento = dc.id_documento
-          ) sb_name,
-          ud.drive_link,
-          ud.estado,
-          ud.id_udoc,
-          u.codigo_usuario,
-          dc.id_documento,
-          dc.doc_ejemplo,
-          dc.doc_modelo
-        FROM
-          "Documento" dc
-        LEFT JOIN
-          "UsuarioDocumento" ud
-          ON dc.id_documento = ud.fk_documento
-        LEFT JOIN
-          "Usuario" u
-          ON u.usuario_id = ud.fk_usuario AND u.codigo_usuario = $1
+                u.codigo_usuario = $1
+        ) AS udData
+        RIGHT JOIN
+            "Documento" dc
+            ON udData.id_udoc = dc.id_documento
         WHERE
-          dc.tipo_procedimiento = $2
+            dc.tipo_procedimiento = $2
         `,
         [userCode, userType = 'egresado']
       )
