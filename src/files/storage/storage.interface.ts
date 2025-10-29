@@ -5,6 +5,7 @@ import Stream from "stream";
 export interface StorageStrategy {
   // Subir un archivo
   upload(file: Express.Multer.File, folderId: string): Promise<any>;
+  update(fileId: string, file: Express.Multer.File): Promise<any>;
 
   // Subir múltiples archivos
   uploadMany(files: { filePath: string; fileName: string; mimeType: string }[]): Promise<any[]>;

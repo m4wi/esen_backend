@@ -57,12 +57,44 @@ export class FilesService {
     if (!userFolderId) {
       throw new Error('Folder ID is null or undefined');
     }
+    
+    // consultar si ya existe el documento y llamar a la funcion actuaizar
+    let updateableFileState = false;
+    let fileId = "";
 
-    const fileId = await this.googleDriveStorage.upload(file, userFolderId);
+    try {
+      const result = await this.databaseService.query(
+          `
+          SELECT
+            drive_link,
+            regexp_replace(drive_link, '^.*?/d/([^/]+)/.*$', '\\1') AS file_id
+          FROM "UsuarioDocumento"
+          WHERE fk_usuario = $1
+            AND fk_documento = $2
+          LIMIT 1;
+          `,
+          [userId, documentId]
+        );
+        
+        if (result.rows.length > 0) {
+          fileId = result.rows[0].file_id;
+          updateableFileState = true;
+        }
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to get UsuarioDocumento data');
+    }
+
+
+    if ( !updateableFileState ) {
+      fileId = await this.googleDriveStorage.upload(file, userFolderId);
+    } else {
+      fileId = await this.googleDriveStorage.update(fileId, file);
+    }
+
     if (!fileId) {
       throw new InternalServerErrorException('Failed to upload file to Google Drive');
     }
-    
+
     try {
       const formatedlink : string = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
       const result = await this.databaseService.query(

@@ -208,6 +208,24 @@ export class GoogleDriveStorage implements StorageStrategy, OnModuleInit {
     return response.data.id
   }
 
+  async update(
+    fileId: string,
+    file: Express.Multer.File
+  ): Promise<any> {
+    const response = await this.drive.files.update({
+      fileId, 
+      media: {
+        mimeType: file.mimetype,
+        body: Readable.from(file.buffer),
+      },
+      requestBody: {
+        name: file.originalname, 
+      },
+      fields: 'id, name',
+    });
+    return response.data.id;
+  }
+
 
   /* --------------------------------------------------------------- */
 
