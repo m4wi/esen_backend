@@ -22,38 +22,55 @@ export class UsersService {
       const result = await this.databaseService.query(
         `
         SELECT 
-          u.usuario_id,
-          u.nombre,
-          u.apellido,
-          u.drive_folder,
-          (
-            SELECT
-              json_agg(row_to_json(o))
-            FROM 
-              "Observacion" o
-            WHERE 
-              o.fk_receptor = u.usuario_id
-          ) AS observaciones,
-          (
-            SELECT
-              count(*)
-            FROM 
-              "UsuarioDocumento" 
-            WHERE 
-              fk_usuario = u.usuario_id 
-              AND 
-              estado = 'aceptado'
-          ) AS documentos_aceptados
-          FROM 
+            u.usuario_id,
+            u.nombre,
+            u.apellido,
+            u.drive_folder,
+            (
+                SELECT
+                    json_agg(
+                        -- Construimos el objeto JSON manualmente para incluir el nombre del documento
+                        json_build_object(
+                            'id_observacion', o_interno.id_observacion, -- Ajusta el nombre real del campo PK
+                            'fk_emisor', o_interno.fk_emisor,
+                            'fk_receptor', o_interno.fk_receptor,
+                            'fk_usuario_documento', o_interno.fk_usuario_documento,
+                            'contenido', o_interno.contenido,
+                            'fecha', o_interno.fecha,
+                            'descripcion', o_interno.descripcion,
+                            'created_at', o_interno.created_at,
+                            'updated_at', o_interno.updated_at,
+                            'nombre_documento', d_interno.nombre_documento  -- Nombre del doc aquí
+                        )
+                    )
+                FROM 
+                    "Observacion" o_interno
+                INNER JOIN 
+                    "UsuarioDocumento" ud_interno ON o_interno.fk_usuario_documento = ud_interno.id_udoc -- Ajusta FK
+                INNER JOIN 
+                    "Documento" d_interno ON ud_interno.fk_documento = d_interno.id_documento -- Ajusta FK
+                WHERE 
+                    o_interno.fk_receptor = u.usuario_id
+            ) AS observaciones,
+            (
+                SELECT
+                    count(*)
+                FROM 
+                    "UsuarioDocumento" 
+                WHERE 
+                    fk_usuario = u.usuario_id 
+                    AND 
+                    estado = 'aceptado'
+            ) AS documentos_aceptados
+        FROM 
             "Usuario" u
-          WHERE 
-            u.codigo_usuario = $1
+        WHERE 
+            u.codigo_usuario = $1;
         `,
         [userCode]
       );
 
       userdata = result.rows[0];
-      console.log(result)
     } catch (error) {
       throw new Error(error.message);
     }
