@@ -12,7 +12,7 @@ export class UsersService {
   constructor(
     private databaseService: DatabaseService
   ){}
-
+  // data a modificar
   async buscarUsuario ( userCode: string ) {
     if ( !userCode ) {
       throw new Error("usercode is null");
@@ -65,6 +65,9 @@ export class UsersService {
     if ( !userCode ) {
       throw new Error("usercode is null");
     }
+    if ( !userType ) {
+      throw new Error("usertype is null");
+    }
     let userDocuments: any;
     try {
       const result = await this.databaseService.query(
@@ -74,6 +77,7 @@ export class UsersService {
             dc.id_documento,
             dc.doc_ejemplo,
             dc.doc_modelo,
+            dc.tipo_procedimiento,
             udData.fk_usuario,
             (
                 SELECT
@@ -93,7 +97,8 @@ export class UsersService {
             ud.drive_link,
             ud.estado,
             ud.id_udoc,
-            u.codigo_usuario
+            u.codigo_usuario,
+            ud.fk_documento
             FROM
                 "Usuario" u
             INNER JOIN
@@ -104,11 +109,11 @@ export class UsersService {
         ) AS udData
         RIGHT JOIN
             "Documento" dc
-            ON udData.id_udoc = dc.id_documento
+            ON udData.fk_documento = dc.id_documento
         WHERE
-            dc.tipo_procedimiento = $2
+            dc.tipo_procedimiento = $2;
         `,
-        [userCode, userType = 'egresado']
+        [userCode, userType]
       )
       userDocuments = result.rows;
     } catch (error) {
