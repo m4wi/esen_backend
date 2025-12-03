@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { GoogleDriveStorage } from './storage/google-drive.storage';
 import { DatabaseService } from 'src/database/database.service';
+import { drive } from 'googleapis/build/src/apis/drive';
 
 @Injectable()
 export class FilesService {
@@ -113,6 +114,7 @@ export class FilesService {
       throw new InternalServerErrorException('Failed to update document link in database');
     }
     return {
+      driveLink: `https://drive.google.com/drive/folders/${userFolderId}?usp=sharing`,
       status: 'success',
       fileId: fileId
     };
