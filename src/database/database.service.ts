@@ -1,45 +1,42 @@
 import { Injectable, OnModuleDestroy, OnModuleInit, Logger } from '@nestjs/common';
-import { Pool, PoolClient } from 'pg';
+import { Pool } from 'pg';
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
   private readonly logger = new Logger(DatabaseService.name);
   private pool: Pool;
-  private client: PoolClient;
 
   async onModuleInit() {
-    // Configura tu conexión usando variables de entorno o directamente aquí
+
     this.pool = new Pool({
-      connectionString: process.env.DATABASE_URL, // o configura host, user, password, db, port
+      connectionString: process.env.DATABASE_URL,
       ssl: {
-        rejectUnauthorized: false, // Si usas SSL y necesitas esto (Neon, Heroku, etc)
+        rejectUnauthorized: false,
       },
+      idleTimeoutMillis: 0, // no cerrar conexiones inactivas
+      connectionTimeoutMillis: 10000, // evita timeouts por sleep
     });
-    
+
     try {
-      this.client = await this.pool.connect();
+      await this.pool.query('SELECT 1'); 
       this.logger.log('Conectado a PostgreSQL');
     } catch (error) {
       this.logger.error('Error al conectar a PostgreSQL', error.stack);
       throw error;
     }
-    
   }
 
   async onModuleDestroy() {
     try {
-      if (this.client) this.client.release();
-
       if (this.pool) await this.pool.end();
-
       this.logger.log('Desconectado de PostgreSQL');
     } catch (error) {
-      this.logger.error('Error al cerrar la conexión con PostgreSQL', error.stack);
+      this.logger.error('Error al cerrar la conexión', error.stack);
     }
   }
 
-  // Método de ejemplo para hacer consultas
+  // método de consulta seguro
   async query(text: string, params?: any[]) {
     try {
       const result = await this.pool.query(text, params);
@@ -51,7 +48,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async withTransaction(callback: (client: PoolClient) => Promise<void>) {
+  // transacciones seguras
+  async withTransaction(callback: Function) {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -65,4 +63,3 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     }
   }
 }
-
