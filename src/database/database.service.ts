@@ -11,9 +11,6 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
     this.pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: {
-        rejectUnauthorized: false,
-      },
       idleTimeoutMillis: 0, // no cerrar conexiones inactivas
       connectionTimeoutMillis: 10000, // evita timeouts por sleep
     });
